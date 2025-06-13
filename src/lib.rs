@@ -195,6 +195,7 @@ use core::marker::PhantomData;
 
 /// Errors in this crate
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error<E> {
     /// I²C bus communication error
     I2C(E),
@@ -205,6 +206,7 @@ pub enum Error<E> {
 /// Error type for mode changes.
 ///
 /// This allows to retrieve the unchanged device in case of an error.
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ModeChangeError<E, DEV> {
     /// I²C bus error while changing mode.
     ///
@@ -214,6 +216,7 @@ pub enum ModeChangeError<E, DEV> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Config {
     bits: u16,
 }
@@ -275,6 +278,7 @@ pub struct Opt300x<I2C, IC, MODE> {
 
 /// Possible slave addresses
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum SlaveAddr {
     /// Default slave address
     Default,
@@ -286,6 +290,7 @@ pub enum SlaveAddr {
 ///
 /// Number of consecutive fault events necessary to trigger interrupt.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum FaultCount {
     /// One (default)
     One,
@@ -299,6 +304,7 @@ pub enum FaultCount {
 
 /// Interrupt pin polarity (active state)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum InterruptPinPolarity {
     /// Active low (default)
     Low,
@@ -308,6 +314,7 @@ pub enum InterruptPinPolarity {
 
 /// Lux range
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum LuxRange {
     /// Manual [0-11]
     Manual(u8),
@@ -317,6 +324,7 @@ pub enum LuxRange {
 
 /// Integration time
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum IntegrationTime {
     /// 100 ms
     Ms100,
@@ -326,6 +334,7 @@ pub enum IntegrationTime {
 
 /// Result comparison mode for interrupt reporting
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ComparisonMode {
     /// Latched window-style
     LatchedWindow,
@@ -335,6 +344,7 @@ pub enum ComparisonMode {
 
 /// Conversion status
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Status {
     /// Whether an overflow condition during the conversion has occurred.
     pub has_overflown: bool,
@@ -348,6 +358,7 @@ pub struct Status {
 
 /// One-shot measurement
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Measurement<T> {
     /// Result
     pub result: T,
