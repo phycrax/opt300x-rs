@@ -47,6 +47,10 @@ Datasheets:
 Application Guide:
 - [OPT3001 ALS Application Guide](https://www.ti.com/lit/an/sbea002a/sbea002a.pdf)
 
+## Feature flags
+
+* `defmt`: Enables [defmt](https://github.com/knurling-rs/defmt) support.
+
 ## Usage
 
 To use this driver, import this crate and an `embedded_hal` implementation,
