@@ -8,8 +8,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 
-## [1.1.0] - 2025-07-01
-
 ### Changed
 - Added [defmt](https://github.com/knurling-rs/defmt) support
 
