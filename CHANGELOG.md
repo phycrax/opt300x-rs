@@ -29,8 +29,7 @@ may be some API changes in the future, in case I decide that something can be
 further improved. All changes will be documented in this CHANGELOG.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/eldruin/opt300x-rs/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/eldruin/opt300x-rs/compare/v1.0.0...v1.1.0
+[Unreleased]: https://github.com/eldruin/opt300x-rs/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/eldruin/opt300x-rs/compare/v0.1.1...v1.0.0
 [0.1.1]: https://github.com/eldruin/opt300x-rs/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/eldruin/opt300x-rs/releases/tag/v0.1.0
