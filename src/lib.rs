@@ -111,14 +111,14 @@
 //!
 //! ```no_run
 //! use linux_embedded_hal::I2cdev;
-//! use nb;
+//! use futures::block_on;
 //! use opt300x::{Opt300x, SlaveAddr};
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::default();
 //! let mut sensor = Opt300x::new_opt3001(dev, address);
 //! loop {
-//!     let m = nb::block!(sensor.read_lux()).unwrap();
+//!     let m = block_on!(sensor.read_lux()).unwrap();
 //!     println!("lux: {:2}", m.result);
 //! }
 //! ```

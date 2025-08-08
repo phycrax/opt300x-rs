@@ -1,7 +1,6 @@
 extern crate embedded_hal_mock as hal;
-#[macro_use]
-extern crate nb;
 extern crate opt300x;
+use futures::executor::block_on;
 use hal::eh1::i2c::Transaction as I2cTrans;
 use opt300x::Status;
 
@@ -40,7 +39,7 @@ fn read_measurement() {
         ),
     ];
     let mut sensor = new_opt3001(&transactions);
-    let measurement = block!(sensor.read_lux()).unwrap();
+    let measurement = block_on(sensor.read_lux()).unwrap();
 
     assert!(measurement.result > 2818.56 - 0.5);
     assert!(measurement.result < 2818.56 + 0.5);
