@@ -154,21 +154,40 @@ where
     I2C: i2c::I2c,
 {
     /// Read the result of the most recent light to digital conversion in lux
-    pub fn read_lux(&mut self) -> Result<f32, Error<I2C::Error>> {
-        let result = self.read_raw()?;
-        Ok(raw_to_lux(result))
+    pub fn read_lux_precise(&mut self) -> Result<(u32, u8), Error<I2C::Error>> {
+        let raw = self.read_raw()?;
+        let lux = raw_to_lux(raw);
+
+        Ok((lux / 100, (lux % 100) as u8))
+    }
+
+    /// Read the result of the most recent light to digital conversion in lux
+    pub fn read_lux(&mut self) -> Result<u32, Error<I2C::Error>> {
+        let raw = self.read_raw()?;
+        let lux = raw_to_lux(raw);
+
+        Ok(lux / 100)
     }
 
     /// Read the result of the most recent light to digital conversion in
     /// raw format: (exponent, mantissa)
     pub fn read_raw(&mut self) -> Result<(u8, u16), Error<I2C::Error>> {
         let result = self.read_register(Register::RESULT)?;
-        Ok(((result >> 12) as u8, result & 0xFFF))
+
+        Ok(reg_to_raw(result))
     }
 }
 
-fn raw_to_lux(result: (u8, u16)) -> f32 {
-    (f64::from(1 << result.0) * 0.01 * f64::from(result.1)) as f32
+fn reg_to_raw(reg: u16) -> (u8, u16) {
+    ((reg >> 12) as u8, reg & 0xFFF)
+}
+
+fn raw_to_lux_f32(raw: (u8, u16)) -> f32 {
+    (f64::from(1 << raw.0) * 0.01 * f64::from(raw.1)) as f32
+}
+
+fn raw_to_lux(raw: (u8, u16)) -> u32 {
+    2u32.pow(raw.0 as u32) * (raw.1 as u32)
 }
 
 impl<I2C, IC> Opt300x<I2C, IC, mode::OneShot>
@@ -176,7 +195,16 @@ where
     I2C: i2c::I2c,
 {
     /// Read the result of the most recent light to digital conversion in lux
-    pub async fn read_lux(&mut self) -> Result<Measurement<f32>, Error<I2C::Error>> {
+    pub async fn read_lux_precise(&mut self) -> Result<Measurement<f32>, Error<I2C::Error>> {
+        let measurement = self.read_raw().await?;
+        Ok(Measurement {
+            result: raw_to_lux_f32(measurement.result),
+            status: measurement.status,
+        })
+    }
+
+    /// Read the result of the most recent light to digital conversion in lux
+    pub async fn read_lux(&mut self) -> Result<Measurement<u32>, Error<I2C::Error>> {
         let measurement = self.read_raw().await?;
         Ok(Measurement {
             result: raw_to_lux(measurement.result),
@@ -196,7 +224,7 @@ where
                     let result = self.read_register(Register::RESULT)?;
                     self.was_conversion_started = false;
                     Poll::Ready(Ok(Measurement {
-                        result: ((result >> 12) as u8, result & 0xFFF),
+                        result: reg_to_raw(result),
                         status,
                     }))
                 } else {
