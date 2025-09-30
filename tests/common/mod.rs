@@ -1,5 +1,5 @@
 use hal::eh1::i2c::{Mock as I2cMock, Transaction as I2cTrans};
-use opt300x::{ic, mode, Opt300x, SlaveAddr};
+use opt300x::{Opt300x, SlaveAddr};
 
 pub const DEV_ADDR: u8 = 0b100_0100;
 pub const CFG_DEFAULT: u16 = 0xC810;
@@ -31,11 +31,11 @@ impl BitFlags {
 }
 
 #[allow(unused)]
-pub fn new_opt3001(transactions: &[I2cTrans]) -> Opt300x<I2cMock, ic::Opt3001, mode::OneShot> {
-    Opt300x::new_opt3001(I2cMock::new(transactions), SlaveAddr::default())
+pub fn new_opt(transactions: &[I2cTrans]) -> Opt300x<I2cMock> {
+    Opt300x::new(I2cMock::new(transactions), SlaveAddr::default())
 }
 
-pub fn destroy<IC, MODE>(sensor: Opt300x<I2cMock, IC, MODE>) {
+pub fn destroy(sensor: Opt300x<I2cMock>) {
     sensor.destroy().done();
 }
 

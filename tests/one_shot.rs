@@ -5,7 +5,7 @@ use hal::eh1::i2c::Transaction as I2cTrans;
 use opt300x::Status;
 
 mod common;
-use self::common::{destroy, new_opt3001, BitFlags as BF, Register as Reg, CFG_DEFAULT, DEV_ADDR};
+use self::common::{destroy, new_opt, BitFlags as BF, Register as Reg, CFG_DEFAULT, DEV_ADDR};
 
 #[test]
 fn read_measurement() {
@@ -38,11 +38,11 @@ fn read_measurement() {
             vec![(value >> 8) as u8, (value & 0xFF) as u8],
         ),
     ];
-    let mut sensor = new_opt3001(&transactions);
-    let measurement = block_on(sensor.read_lux()).unwrap();
+    let mut sensor = new_opt(&transactions);
+    let measurement = block_on(sensor.read_lux_oneshot()).unwrap();
 
-    assert!(measurement.result > 2818.56 - 0.5);
-    assert!(measurement.result < 2818.56 + 0.5);
+    assert!(measurement.result > 281856 - 50);
+    assert!(measurement.result < 281856 + 50);
     assert_eq!(
         Status {
             has_overflown: true,

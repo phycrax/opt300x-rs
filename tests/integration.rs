@@ -7,27 +7,21 @@ use opt300x::{
 };
 
 mod common;
-use self::common::{destroy, new_opt3001, BitFlags as BF, Register as Reg, CFG_DEFAULT, DEV_ADDR};
+use self::common::{destroy, new_opt, BitFlags as BF, Register as Reg, CFG_DEFAULT, DEV_ADDR};
 
 macro_rules! create_destroy_test {
-    ($name:ident, $method:ident) => {
+    ($name:ident) => {
         #[test]
         fn $name() {
-            let sensor = Opt300x::$method(I2cMock::new(&[]), SlaveAddr::default());
+            let sensor = Opt300x::new(I2cMock::new(&[]), SlaveAddr::default());
             destroy(sensor);
         }
     };
 }
-create_destroy_test!(create_and_destroy_opt3001, new_opt3001);
-create_destroy_test!(create_and_destroy_opt3002, new_opt3002);
-create_destroy_test!(create_and_destroy_opt3004, new_opt3004);
-create_destroy_test!(create_and_destroy_opt3006, new_opt3006);
-
-#[test]
-fn create_and_destroy_opt3007() {
-    let sensor = Opt300x::new_opt3007(I2cMock::new(&[]));
-    destroy(sensor);
-}
+create_destroy_test!(create_and_destroy_opt3001);
+create_destroy_test!(create_and_destroy_opt3002);
+create_destroy_test!(create_and_destroy_opt3004);
+create_destroy_test!(create_and_destroy_opt3006);
 
 macro_rules! get_test {
     ($name:ident, $method:ident, $register:ident, $value:expr, $expected:expr) => {
@@ -38,7 +32,7 @@ macro_rules! get_test {
                 vec![Reg::$register],
                 vec![($value >> 8) as u8, ($value & 0xFF) as u8],
             )];
-            let mut sensor = new_opt3001(&transactions);
+            let mut sensor = new_opt(&transactions);
             let result = sensor.$method().unwrap();
             assert_eq!($expected, result);
             destroy(sensor);
@@ -74,26 +68,26 @@ macro_rules! read_lux_test {
                     vec![($value >> 8) as u8, ($value & 0xFF) as u8],
                 ),
             ];
-            let sensor = new_opt3001(&transactions);
-            let mut sensor = sensor.into_continuous().ok().unwrap();
+            let mut sensor = new_opt(&transactions);
+            sensor.into_continuous().ok().unwrap();
             let result = sensor.read_lux().unwrap();
-            assert!(result > $expected - 0.5);
-            assert!(result < $expected + 0.5);
+            assert_eq!(result, $expected);
+            assert_eq!(result, $expected);
             destroy(sensor);
         }
     };
 }
 
-read_lux_test!(lux_0_01, 0x01, 0.01);
-read_lux_test!(lux_40, 0xFFF, 40.95);
-read_lux_test!(lux_88, 0x3456, 88.80);
-read_lux_test!(lux_2818, 0x789A, 2818.56);
-read_lux_test!(lux_5242_1, 0x8800, 5242.88);
-read_lux_test!(lux_5242_2, 0x9400, 5242.88);
-read_lux_test!(lux_5242_3, 0xA200, 5242.88);
-read_lux_test!(lux_5242_4, 0xB100, 5242.88);
-read_lux_test!(lux_20, 0xB001, 20.48);
-read_lux_test!(lux_83k, 0xBFFF, 83_865.6);
+read_lux_test!(lux_0_01, 0x01, 1);
+read_lux_test!(lux_40, 0xFFF, 4095);
+read_lux_test!(lux_88, 0x3456, 8880);
+read_lux_test!(lux_2818, 0x789A, 281856);
+read_lux_test!(lux_5242_1, 0x8800, 524288);
+read_lux_test!(lux_5242_2, 0x9400, 524288);
+read_lux_test!(lux_5242_3, 0xA200, 524288);
+read_lux_test!(lux_5242_4, 0xB100, 524288);
+read_lux_test!(lux_20, 0xB001, 2048);
+read_lux_test!(lux_83k, 0xBFFF, 8386560);
 
 macro_rules! read_raw_test {
     ($name:ident, $value:expr, $expected:expr) => {
@@ -114,8 +108,8 @@ macro_rules! read_raw_test {
                     vec![($value >> 8) as u8, ($value & 0xFF) as u8],
                 ),
             ];
-            let sensor = new_opt3001(&transactions);
-            let mut sensor = sensor.into_continuous().ok().unwrap();
+            let mut sensor = new_opt(&transactions);
+            sensor.into_continuous().ok().unwrap();
             let result = sensor.read_raw().unwrap();
             assert_eq!($expected, result);
             destroy(sensor);
@@ -220,7 +214,7 @@ macro_rules! set_test {
                 DEV_ADDR,
                 vec![Reg::$register, ($value >> 8) as u8, $value as u8],
             )];
-            let mut sensor = new_opt3001(&transactions);
+            let mut sensor = new_opt(&transactions);
             sensor.$method($($arg),*).unwrap();
             destroy(sensor);
         }
@@ -289,16 +283,16 @@ fn can_change_mode() {
             ],
         ),
     ];
-    let sensor = new_opt3001(&transactions);
-    let sensor = sensor.into_continuous().ok().unwrap();
-    let sensor = sensor.into_one_shot().ok().unwrap();
-    let sensor = sensor.into_continuous().ok().unwrap();
+    let mut sensor = new_opt(&transactions);
+    sensor.into_continuous().ok().unwrap();
+    sensor.into_one_shot().ok().unwrap();
+    sensor.into_continuous().ok().unwrap();
     destroy(sensor);
 }
 
 set_invalid_test!(
     too_high_lux_range,
-    new_opt3001,
+    new_opt,
     destroy,
     set_lux_range,
     LuxRange::Manual(0b1100)
@@ -350,7 +344,7 @@ macro_rules! invalid_test {
     ($name:ident, $method:ident $(, $arg:expr)*) => {
         #[test]
         fn $name() {
-            let mut sensor = new_opt3001(&[]);
+            let mut sensor = new_opt(&[]);
             if let Err(Error::InvalidInputData) = sensor.$method($($arg),*) { }
             else {
                 panic!("Should have returned error");
@@ -417,7 +411,7 @@ fn configured_low_limit_is_restored_after_disabling_end_of_conv() {
             vec![Reg::LOW_LIMIT, (low_limit >> 8) as u8, low_limit as u8],
         ),
     ];
-    let mut sensor = new_opt3001(&transactions);
+    let mut sensor = new_opt(&transactions);
     sensor
         .set_low_limit_raw((low_limit >> 12) as u8, low_limit & 0xFFF)
         .unwrap();
