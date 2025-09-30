@@ -2,23 +2,13 @@
 name = "opt300x"
 version = "1.0.0"
 authors = ["Diego Barrios Romero <eldruin@gmail.com>"]
+edition = "2021"
 repository = "https://github.com/eldruin/opt300x-rs"
-license = "MIT OR Apache-2.0"
 description = "Platform-agnostic Rust driver for the OPT300x ambient light sensors. Compatible with OPT3001, OPT3002, OPT3004, OPT3006 and OPT3007"
-readme = "README.md"
-keywords = ["ambient", "light", "sensor", "als", "embedded-hal-driver"]
+license = "MIT OR Apache-2.0"
 categories = ["embedded", "hardware-support", "no-std"]
-homepage = "https://github.com/eldruin/opt300x-rs"
+keywords = ["ambient", "light", "sensor", "als", "embedded-hal-driver"]
 documentation = "https://docs.rs/opt300x"
-include = [
-    "/**/*.rs",
-    "/Cargo.toml",
-    "/README.md",
-    "/CHANGELOG.md",
-    "/LICENSE-MIT",
-    "/LICENSE-APACHE",
-]
-edition = "2018"
 
 [dependencies]
 embedded-hal = "1"
@@ -27,9 +17,6 @@ defmt = { version = "1", optional = true }
 [dev-dependencies]
 embedded-hal-mock = {version="0.10.0", default-features=false, features=["eh1"]}
 futures = "0.3"
-
-[profile.release]
-lto = true
 
 [features]
 ## Use [`defmt`](https://docs.rs/defmt/latest/defmt/) for logging
