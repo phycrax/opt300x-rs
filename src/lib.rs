@@ -76,7 +76,7 @@
 //! ## Feature flags
 //! * `defmt`: Enables [defmt](https://github.com/knurling-rs/defmt) support.
 //!
-//! ## Usage examples (see also examples folder)
+//! ## Usage examples
 //!
 //! To use this driver, import this crate and an `embedded_hal` implementation,
 //! then instantiate the appropriate device.
@@ -87,36 +87,36 @@
 //!
 //! ### Create a driver instance for the OPT3001
 //!
-//! ```no_run
+//! ```ignore
 //! use linux_embedded_hal::I2cdev;
 //! use opt300x::{Opt300x, SlaveAddr};
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::default();
-//! let sensor = Opt300x::new_opt3001(dev, address);
+//! let sensor = Opt300x::new(dev, address);
 //! ```
 //!
 //! ### Provide an alternative address
 //!
-//! ```no_run
+//! ```ignore
 //! use linux_embedded_hal::I2cdev;
 //! use opt300x::{Opt300x, SlaveAddr};
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::Alternative(true, false);
-//! let mut sensor = Opt300x::new_opt3001(dev, address);
+//! let mut sensor = Opt300x::new(dev, address);
 //! ```
 //!
 //! ### Read lux in one-shot measurements
 //!
-//! ```no_run
+//! ```ignore
 //! use linux_embedded_hal::I2cdev;
 //! use futures::block_on;
 //! use opt300x::{Opt300x, SlaveAddr};
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::default();
-//! let mut sensor = Opt300x::new_opt3001(dev, address);
+//! let mut sensor = Opt300x::new(dev, address);
 //! loop {
 //!     let m = block_on!(sensor.read_lux()).unwrap();
 //!     println!("lux: {:2}", m.result);
@@ -125,14 +125,14 @@
 //!
 //! ### Change into continuous mode and read lux
 //!
-//! ```no_run
+//! ```ignore
 //! use linux_embedded_hal::I2cdev;
 //! use opt300x::{Opt300x, SlaveAddr};
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::default();
-//! let sensor = Opt300x::new_opt3001(dev, address);
-//! let mut sensor = sensor.into_continuous().ok().unwrap();
+//! let mut sensor = Opt300x::new(dev, address);
+//! sensor.into_continuous().ok().unwrap();
 //! loop {
 //!     let lux = sensor.read_lux().unwrap();
 //!     println!("lux: {:2}", lux);
@@ -141,13 +141,13 @@
 //!
 //! ### Set the integration time and manual lux range
 //!
-//! ```no_run
+//! ```ignore
 //! use linux_embedded_hal::I2cdev;
 //! use opt300x::{IntegrationTime, LuxRange, Opt300x, SlaveAddr};
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::default();
-//! let mut sensor = Opt300x::new_opt3001(dev, address);
+//! let mut sensor = Opt300x::new(dev, address);
 //! sensor.set_integration_time(IntegrationTime::Ms800).unwrap();
 //! sensor.set_lux_range(LuxRange::Manual(2)).unwrap();
 //! sensor.enable_exponent_masking().unwrap();
@@ -155,7 +155,7 @@
 //!
 //! ### Configure interrupts
 //!
-//! ```no_run
+//! ```ignore
 //! use linux_embedded_hal::I2cdev;
 //! use opt300x::{
 //!     ComparisonMode, FaultCount, InterruptPinPolarity, Opt300x, SlaveAddr
@@ -163,7 +163,7 @@
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::default();
-//! let mut sensor = Opt300x::new_opt3001(dev, address);
+//! let mut sensor = Opt300x::new(dev, address);
 //! sensor.set_comparison_mode(ComparisonMode::LatchedWindow).unwrap();
 //! sensor.set_interrupt_pin_polarity(InterruptPinPolarity::High).unwrap();
 //! sensor.set_fault_count(FaultCount::Four).unwrap();
@@ -177,13 +177,13 @@
 //!
 //! ### Enable end of conversion mode
 //!
-//! ```no_run
+//! ```ignore
 //! use linux_embedded_hal::I2cdev;
 //! use opt300x::{Opt300x, SlaveAddr};
 //!
 //! let dev = I2cdev::new("/dev/i2c-1").unwrap();
 //! let address = SlaveAddr::default();
-//! let mut sensor = Opt300x::new_opt3001(dev, address);
+//! let mut sensor = Opt300x::new(dev, address);
 //! sensor.enable_end_of_conversion_mode().unwrap();
 //! loop {
 //!     let status = sensor.read_status().unwrap();
