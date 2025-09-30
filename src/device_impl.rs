@@ -5,7 +5,7 @@ use core::{
 
 use crate::{
     ic, marker, mode, ComparisonMode, Config, Error, FaultCount, IntegrationTime,
-    InterruptPinPolarity, LuxRange, Measurement, ModeChangeError, Opt300x, PhantomData, SlaveAddr,
+    InterruptPinPolarity, LuxRange, Measurement, Opt300x, PhantomData, SlaveAddr,
     Status,
 };
 use embedded_hal::i2c;
@@ -99,24 +99,17 @@ where
     /// Note that the conversion ready flag is cleared automatically
     /// after calling this method.
     pub fn into_continuous(
-        mut self,
-    ) -> Result<Opt300x<I2C, IC, mode::Continuous>, ModeChangeError<I2C::Error, Self>> {
+        &mut self,
+    ) -> Result<(), I2C::Error> {
         if let Err(Error::I2C(e)) = self.set_config(
             self.config
                 .with_high(BitFlags::MODE0)
                 .with_high(BitFlags::MODE1),
         ) {
-            return Err(ModeChangeError::I2C(e, self));
+            return Err(e);
         }
-        Ok(Opt300x {
-            i2c: self.i2c,
-            address: self.address,
-            config: self.config,
-            low_limit: self.low_limit,
-            was_conversion_started: false,
-            _ic: PhantomData,
-            _mode: PhantomData,
-        })
+
+        Ok(())
     }
 }
 
@@ -129,30 +122,18 @@ where
     /// This will actually shut down the device until a measurement is requested.
     pub fn into_one_shot(
         mut self,
-    ) -> Result<Opt300x<I2C, IC, mode::OneShot>, ModeChangeError<I2C::Error, Self>> {
+    ) -> Result<(), I2C::Error> {
         if let Err(Error::I2C(e)) = self.set_config(
             self.config
                 .with_low(BitFlags::MODE0)
                 .with_low(BitFlags::MODE1),
         ) {
-            return Err(ModeChangeError::I2C(e, self));
+            return Err(e);
         }
-        Ok(Opt300x {
-            i2c: self.i2c,
-            address: self.address,
-            config: self.config,
-            low_limit: self.low_limit,
-            was_conversion_started: false,
-            _ic: PhantomData,
-            _mode: PhantomData,
-        })
-    }
-}
 
-impl<I2C, IC> Opt300x<I2C, IC, mode::Continuous>
-where
-    I2C: i2c::I2c,
-{
+        Ok(())
+    }
+
     /// Read the result of the most recent light to digital conversion in lux
     pub fn read_lux_precise(&mut self) -> Result<(u32, u8), Error<I2C::Error>> {
         let raw = self.read_raw()?;
@@ -190,6 +171,7 @@ fn raw_to_lux(raw: (u8, u16)) -> u32 {
     2u32.pow(raw.0 as u32) * (raw.1 as u32)
 }
 
+// Oneshot
 impl<I2C, IC> Opt300x<I2C, IC, mode::OneShot>
 where
     I2C: i2c::I2c,
@@ -259,12 +241,7 @@ where
             was_too_low: (config & BitFlags::FL) != 0,
         })
     }
-}
 
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE>
-where
-    I2C: i2c::I2c,
-{
     /// Set the fault count
     ///
     /// Note that the conversion ready flag is cleared automatically
@@ -407,12 +384,7 @@ where
     pub fn disable_end_of_conversion_mode(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_register(Register::LOW_LIMIT, self.low_limit)
     }
-}
 
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE>
-where
-    I2C: i2c::I2c,
-{
     /// Read the manifacturer ID
     pub fn get_manufacturer_id(&mut self) -> Result<u16, Error<I2C::Error>> {
         self.read_register(Register::MANUFACTURER_ID)
@@ -460,12 +432,7 @@ where
             .map_err(Error::I2C)
             .and(Ok(u16::from(data[0]) << 8 | u16::from(data[1])))
     }
-}
 
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE>
-where
-    I2C: i2c::I2c,
-{
     fn set_config(&mut self, config: Config) -> Result<(), Error<I2C::Error>> {
         self.write_register(Register::CONFIG, config.bits)?;
         self.config = config;

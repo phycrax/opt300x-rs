@@ -206,18 +206,6 @@ pub enum Error<E> {
     InvalidInputData,
 }
 
-/// Error type for mode changes.
-///
-/// This allows to retrieve the unchanged device in case of an error.
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum ModeChangeError<E, DEV> {
-    /// I²C bus error while changing mode.
-    ///
-    /// `E` is the error that happened.
-    /// `DEV` is the device with the mode unchanged.
-    I2C(E, DEV),
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Config {
