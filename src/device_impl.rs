@@ -4,9 +4,8 @@ use core::{
 };
 
 use crate::{
-    ic, marker, mode, ComparisonMode, Config, Error, FaultCount, IntegrationTime,
-    InterruptPinPolarity, LuxRange, Measurement, Opt300x, PhantomData, SlaveAddr,
-    Status,
+    mode, ComparisonMode, Config, Error, FaultCount, IntegrationTime, InterruptPinPolarity,
+    LuxRange, Measurement, Opt300x, PhantomData, SlaveAddr, Status,
 };
 use embedded_hal::i2c;
 
@@ -40,57 +39,14 @@ impl Default for Config {
     }
 }
 
-impl marker::WithDeviceId for ic::Opt3001 {}
-impl marker::WithDeviceId for ic::Opt3004 {}
-impl marker::WithDeviceId for ic::Opt3006 {}
-impl marker::WithDeviceId for ic::Opt3007 {}
-
-macro_rules! create {
-    ($ic:ident, $method:ident) => {
-        impl<I2C> Opt300x<I2C, ic::$ic, mode::OneShot> {
-            /// Create new instance of the device
-            pub fn $method(i2c: I2C, address: SlaveAddr) -> Self {
-                Opt300x {
-                    i2c,
-                    address: address.addr(),
-                    config: Config::default(),
-                    low_limit: 0,
-                    was_conversion_started: false,
-                    _ic: PhantomData,
-                    _mode: PhantomData,
-                }
-            }
-        }
-    };
-}
-create!(Opt3001, new_opt3001);
-create!(Opt3002, new_opt3002);
-create!(Opt3004, new_opt3004);
-create!(Opt3006, new_opt3006);
-
-impl<I2C> Opt300x<I2C, ic::Opt3007, mode::OneShot> {
-    /// Create new instance of the OPT3007 device, which has a fixed I2C address.
-    pub fn new_opt3007(i2c: I2C) -> Self {
-        Opt300x {
-            i2c,
-            address: 0b100_0101,
-            config: Config::default(),
-            low_limit: 0,
-            was_conversion_started: false,
-            _ic: PhantomData,
-            _mode: PhantomData,
-        }
-    }
-}
-
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE> {
+impl<I2C, MODE> Opt300x<I2C, MODE> {
     /// Destroy driver instance, return I²C bus instance.
     pub fn destroy(self) -> I2C {
         self.i2c
     }
 }
 
-impl<I2C, IC> Opt300x<I2C, IC, mode::OneShot>
+impl<I2C> Opt300x<I2C, mode::OneShot>
 where
     I2C: i2c::I2c,
 {
@@ -98,9 +54,7 @@ where
     ///
     /// Note that the conversion ready flag is cleared automatically
     /// after calling this method.
-    pub fn into_continuous(
-        &mut self,
-    ) -> Result<(), I2C::Error> {
+    pub fn into_continuous(&mut self) -> Result<(), I2C::Error> {
         if let Err(Error::I2C(e)) = self.set_config(
             self.config
                 .with_high(BitFlags::MODE0)
@@ -113,16 +67,14 @@ where
     }
 }
 
-impl<I2C, IC> Opt300x<I2C, IC, mode::Continuous>
+impl<I2C> Opt300x<I2C, mode::Continuous>
 where
     I2C: i2c::I2c,
 {
     /// Change into one-shot mode
     ///
     /// This will actually shut down the device until a measurement is requested.
-    pub fn into_one_shot(
-        mut self,
-    ) -> Result<(), I2C::Error> {
+    pub fn into_one_shot(mut self) -> Result<(), I2C::Error> {
         if let Err(Error::I2C(e)) = self.set_config(
             self.config
                 .with_low(BitFlags::MODE0)
@@ -172,7 +124,7 @@ fn raw_to_lux(raw: (u8, u16)) -> u32 {
 }
 
 // Oneshot
-impl<I2C, IC> Opt300x<I2C, IC, mode::OneShot>
+impl<I2C> Opt300x<I2C, mode::OneShot>
 where
     I2C: i2c::I2c,
 {
@@ -224,10 +176,22 @@ where
     }
 }
 
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE>
+impl<I2C, MODE> Opt300x<I2C, MODE>
 where
     I2C: i2c::I2c,
 {
+    /// Create new instance of the device
+    pub fn new(i2c: I2C, address: SlaveAddr) -> Self {
+        Opt300x {
+            i2c,
+            address: address.addr(),
+            config: Config::default(),
+            low_limit: 0,
+            was_conversion_started: false,
+            _mode: PhantomData,
+        }
+    }
+
     /// Read the status of the conversion.
     ///
     /// Note that the conversion ready flag is cleared automatically
@@ -389,20 +353,14 @@ where
     pub fn get_manufacturer_id(&mut self) -> Result<u16, Error<I2C::Error>> {
         self.read_register(Register::MANUFACTURER_ID)
     }
-}
 
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE>
-where
-    I2C: i2c::I2c,
-    IC: marker::WithDeviceId,
-{
     /// Read the device ID
     pub fn get_device_id(&mut self) -> Result<u16, Error<I2C::Error>> {
         self.read_register(Register::DEVICE_ID)
     }
 }
 
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE> {
+impl<I2C, MODE> Opt300x<I2C, MODE> {
     /// Reset the internal state of this driver to the default values.
     ///
     /// *Note:* This does not alter the state or configuration of the device.
@@ -421,7 +379,7 @@ impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE> {
     }
 }
 
-impl<I2C, IC, MODE> Opt300x<I2C, IC, MODE>
+impl<I2C, MODE> Opt300x<I2C, MODE>
 where
     I2C: i2c::I2c,
 {

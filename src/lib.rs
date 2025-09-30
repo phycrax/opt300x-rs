@@ -225,28 +225,6 @@ impl Config {
     }
 }
 
-/// IC markers
-#[doc(hidden)]
-pub mod ic {
-    /// Used for OPT3001 devices
-    pub struct Opt3001(());
-    /// Used for OPT3002 devices
-    pub struct Opt3002(());
-    /// Used for OPT3004 devices
-    pub struct Opt3004(());
-    /// Used for OPT3006 devices
-    pub struct Opt3006(());
-    /// Used for OPT3007 devices
-    pub struct Opt3007(());
-}
-
-/// markers
-#[doc(hidden)]
-pub mod marker {
-    use super::private;
-    pub trait WithDeviceId: private::Sealed {}
-}
-
 /// Mode marker
 pub mod mode {
     /// One shot mode
@@ -257,13 +235,12 @@ pub mod mode {
 
 /// OPT300x device driver
 #[derive(Debug)]
-pub struct Opt300x<I2C, IC, MODE> {
+pub struct Opt300x<I2C, MODE> {
     i2c: I2C,
     address: u8,
     config: Config,
     low_limit: u16,
     was_conversion_started: bool,
-    _ic: PhantomData<IC>,
     _mode: PhantomData<MODE>,
 }
 
@@ -361,14 +338,9 @@ mod device_impl;
 mod slave_addr;
 
 mod private {
-    use super::{ic, mode};
+    use super::mode;
     pub trait Sealed {}
 
-    impl Sealed for ic::Opt3001 {}
-    impl Sealed for ic::Opt3002 {}
-    impl Sealed for ic::Opt3004 {}
-    impl Sealed for ic::Opt3006 {}
-    impl Sealed for ic::Opt3007 {}
     impl Sealed for mode::OneShot {}
     impl Sealed for mode::Continuous {}
 }
