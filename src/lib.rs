@@ -194,7 +194,8 @@
 #![deny(unsafe_code, missing_docs)]
 #![no_std]
 
-use core::marker::PhantomData;
+mod device_impl;
+mod slave_addr;
 
 /// Errors in this crate
 #[derive(Debug)]
@@ -225,23 +226,14 @@ impl Config {
     }
 }
 
-/// Mode marker
-pub mod mode {
-    /// One shot mode
-    pub struct OneShot(());
-    /// Continuous measurement mode
-    pub struct Continuous(());
-}
-
 /// OPT300x device driver
 #[derive(Debug)]
-pub struct Opt300x<I2C, MODE> {
+pub struct Opt300x<I2C> {
     i2c: I2C,
     address: u8,
     config: Config,
     low_limit: u16,
     was_conversion_started: bool,
-    _mode: PhantomData<MODE>,
 }
 
 /// Possible slave addresses
@@ -332,15 +324,4 @@ pub struct Measurement<T> {
     pub result: T,
     /// Conversion status.
     pub status: Status,
-}
-
-mod device_impl;
-mod slave_addr;
-
-mod private {
-    use super::mode;
-    pub trait Sealed {}
-
-    impl Sealed for mode::OneShot {}
-    impl Sealed for mode::Continuous {}
 }

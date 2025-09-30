@@ -4,8 +4,8 @@ use core::{
 };
 
 use crate::{
-    mode, ComparisonMode, Config, Error, FaultCount, IntegrationTime, InterruptPinPolarity,
-    LuxRange, Measurement, Opt300x, PhantomData, SlaveAddr, Status,
+    ComparisonMode, Config, Error, FaultCount, IntegrationTime, InterruptPinPolarity, LuxRange,
+    Measurement, Opt300x, SlaveAddr, Status,
 };
 use embedded_hal::i2c;
 
@@ -39,17 +39,36 @@ impl Default for Config {
     }
 }
 
-impl<I2C, MODE> Opt300x<I2C, MODE> {
+impl<I2C> Opt300x<I2C> {
     /// Destroy driver instance, return I²C bus instance.
     pub fn destroy(self) -> I2C {
         self.i2c
     }
 }
 
-impl<I2C> Opt300x<I2C, mode::OneShot>
+fn reg_to_raw(reg: u16) -> (u8, u16) {
+    ((reg >> 12) as u8, reg & 0xFFF)
+}
+
+fn raw_to_lux(raw: (u8, u16)) -> u32 {
+    2u32.pow(raw.0 as u32) * (raw.1 as u32)
+}
+
+impl<I2C> Opt300x<I2C>
 where
     I2C: i2c::I2c,
 {
+    /// Create new instance of the device
+    pub fn new(i2c: I2C, address: SlaveAddr) -> Self {
+        Opt300x {
+            i2c,
+            address: address.addr(),
+            config: Config::default(),
+            low_limit: 0,
+            was_conversion_started: false,
+        }
+    }
+
     /// Change into continuous measurement mode
     ///
     /// Note that the conversion ready flag is cleared automatically
@@ -65,16 +84,11 @@ where
 
         Ok(())
     }
-}
 
-impl<I2C> Opt300x<I2C, mode::Continuous>
-where
-    I2C: i2c::I2c,
-{
     /// Change into one-shot mode
     ///
     /// This will actually shut down the device until a measurement is requested.
-    pub fn into_one_shot(mut self) -> Result<(), I2C::Error> {
+    pub fn into_one_shot(&mut self) -> Result<(), I2C::Error> {
         if let Err(Error::I2C(e)) = self.set_config(
             self.config
                 .with_low(BitFlags::MODE0)
@@ -86,20 +100,12 @@ where
         Ok(())
     }
 
-    /// Read the result of the most recent light to digital conversion in lux
-    pub fn read_lux_precise(&mut self) -> Result<(u32, u8), Error<I2C::Error>> {
-        let raw = self.read_raw()?;
-        let lux = raw_to_lux(raw);
-
-        Ok((lux / 100, (lux % 100) as u8))
-    }
-
-    /// Read the result of the most recent light to digital conversion in lux
+    /// Read the result of the most recent light to digital conversion in 0.01 lux
     pub fn read_lux(&mut self) -> Result<u32, Error<I2C::Error>> {
         let raw = self.read_raw()?;
         let lux = raw_to_lux(raw);
 
-        Ok(lux / 100)
+        Ok(lux)
     }
 
     /// Read the result of the most recent light to digital conversion in
@@ -109,37 +115,10 @@ where
 
         Ok(reg_to_raw(result))
     }
-}
-
-fn reg_to_raw(reg: u16) -> (u8, u16) {
-    ((reg >> 12) as u8, reg & 0xFFF)
-}
-
-fn raw_to_lux_f32(raw: (u8, u16)) -> f32 {
-    (f64::from(1 << raw.0) * 0.01 * f64::from(raw.1)) as f32
-}
-
-fn raw_to_lux(raw: (u8, u16)) -> u32 {
-    2u32.pow(raw.0 as u32) * (raw.1 as u32)
-}
-
-// Oneshot
-impl<I2C> Opt300x<I2C, mode::OneShot>
-where
-    I2C: i2c::I2c,
-{
-    /// Read the result of the most recent light to digital conversion in lux
-    pub async fn read_lux_precise(&mut self) -> Result<Measurement<f32>, Error<I2C::Error>> {
-        let measurement = self.read_raw().await?;
-        Ok(Measurement {
-            result: raw_to_lux_f32(measurement.result),
-            status: measurement.status,
-        })
-    }
 
     /// Read the result of the most recent light to digital conversion in lux
-    pub async fn read_lux(&mut self) -> Result<Measurement<u32>, Error<I2C::Error>> {
-        let measurement = self.read_raw().await?;
+    pub async fn read_lux_oneshot(&mut self) -> Result<Measurement<u32>, Error<I2C::Error>> {
+        let measurement = self.read_raw_oneshot().await?;
         Ok(Measurement {
             result: raw_to_lux(measurement.result),
             status: measurement.status,
@@ -148,7 +127,7 @@ where
 
     /// Read the result of the most recent light to digital conversion in
     /// raw format: (exponent, mantissa)
-    pub fn read_raw(
+    pub fn read_raw_oneshot(
         &mut self,
     ) -> impl Future<Output = Result<Measurement<(u8, u16)>, Error<I2C::Error>>> + '_ {
         poll_fn(move |cx| {
@@ -173,23 +152,6 @@ where
                 Poll::Pending
             }
         })
-    }
-}
-
-impl<I2C, MODE> Opt300x<I2C, MODE>
-where
-    I2C: i2c::I2c,
-{
-    /// Create new instance of the device
-    pub fn new(i2c: I2C, address: SlaveAddr) -> Self {
-        Opt300x {
-            i2c,
-            address: address.addr(),
-            config: Config::default(),
-            low_limit: 0,
-            was_conversion_started: false,
-            _mode: PhantomData,
-        }
     }
 
     /// Read the status of the conversion.
@@ -358,9 +320,7 @@ where
     pub fn get_device_id(&mut self) -> Result<u16, Error<I2C::Error>> {
         self.read_register(Register::DEVICE_ID)
     }
-}
 
-impl<I2C, MODE> Opt300x<I2C, MODE> {
     /// Reset the internal state of this driver to the default values.
     ///
     /// *Note:* This does not alter the state or configuration of the device.
@@ -377,12 +337,7 @@ impl<I2C, MODE> Opt300x<I2C, MODE> {
         self.low_limit = 0;
         self.was_conversion_started = false;
     }
-}
 
-impl<I2C, MODE> Opt300x<I2C, MODE>
-where
-    I2C: i2c::I2c,
-{
     fn read_register(&mut self, register: u8) -> Result<u16, Error<I2C::Error>> {
         let mut data = [0, 0];
         self.i2c
@@ -426,7 +381,7 @@ mod tests {
 
     #[test]
     fn can_reset_driver_state() {
-        let mut device = Opt300x::new_opt3001(I2cMock {}, SlaveAddr::default());
+        let mut device = Opt300x::new(I2cMock {}, SlaveAddr::default());
         device.set_fault_count(FaultCount::Eight).unwrap();
         device.set_low_limit_raw(1, 2).unwrap();
         assert_ne!(device.config, Config::default());
