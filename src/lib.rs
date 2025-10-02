@@ -197,16 +197,6 @@
 mod device_impl;
 mod slave_addr;
 
-/// Errors in this crate
-#[derive(Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum Error<E> {
-    /// I²C bus communication error
-    I2C(E),
-    /// Invalid input data provided
-    InvalidInputData,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Config {

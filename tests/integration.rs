@@ -2,7 +2,7 @@ extern crate embedded_hal_mock as hal;
 extern crate opt300x;
 use hal::eh1::i2c::{Mock as I2cMock, Transaction as I2cTrans};
 use opt300x::{
-    ComparisonMode, Error, FaultCount, IntegrationTime, InterruptPinPolarity, LuxRange, Opt300x,
+    ComparisonMode, FaultCount, IntegrationTime, InterruptPinPolarity, LuxRange, Opt300x,
     SlaveAddr, Status,
 };
 
@@ -290,13 +290,6 @@ fn can_change_mode() {
     destroy(sensor);
 }
 
-set_invalid_test!(
-    too_high_lux_range,
-    new_opt,
-    destroy,
-    set_lux_range,
-    LuxRange::Manual(0b1100)
-);
 cfg_test!(
     set_lux_range_auto,
     set_lux_range,
@@ -340,22 +333,7 @@ cfg_test!(
     disable_exponent_masking,
     CFG_DEFAULT & !BF::ME
 );
-macro_rules! invalid_test {
-    ($name:ident, $method:ident $(, $arg:expr)*) => {
-        #[test]
-        fn $name() {
-            let mut sensor = new_opt(&[]);
-            if let Err(Error::InvalidInputData) = sensor.$method($($arg),*) { }
-            else {
-                panic!("Should have returned error");
-            }
-            destroy(sensor);
-        }
-    };
-}
 
-invalid_test!(low_limit_exp_too_big, set_low_limit_raw, 0b1100, 0);
-invalid_test!(low_limit_mant_too_big, set_low_limit_raw, 0, 0x1000);
 set_test!(
     set_low_limit,
     set_low_limit_raw,
@@ -365,8 +343,6 @@ set_test!(
     0xFFF
 );
 
-invalid_test!(high_limit_exp_too_big, set_high_limit_raw, 0b1100, 0);
-invalid_test!(high_limit_mant_too_big, set_high_limit_raw, 0, 0x1000);
 set_test!(
     set_high_limit,
     set_high_limit_raw,
